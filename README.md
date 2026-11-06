@@ -172,6 +172,20 @@ tools/              构建、预览、验收、性能探针
 | `verify-settings-gui.mjs <base>` | 设置页：字段、保存落盘、立刻看一眼 |
 | `diag-perf-gpu.mjs <port> gpu\|sw` | 帧率与真实 renderer 名 |
 
+重录 README 里的循环 GIF（画面被逐帧钉在时间轴上，不用屏幕录制，所以没有撕裂）：
+
+```powershell
+node tools/preview-server.mjs 8791        # 另开一个窗口
+node tools/record-gif.mjs http://127.0.0.1:8791   # 475 帧 → _frames/
+python tools/gif-encode.py 560 64 none 1  # → docs/plate-cycle.gif（约 8.8 MB）
+```
+
+`python` 需要 Pillow；没有的话用 DSH 自带的 python（`dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe`）。
+帧图只在本地，`_frames/` 已进 `.gitignore`。
+
+插件页图标读的是包根的 `icon.svg`（`package.json` 的 `exports["./icon"]` 指过去），README 顶部用的是同一个文件——
+所以 GitHub 首页和 DSH 插件列表里看到的是同一枚显像管图标。
+
 宿主路由（除调试路由外都在 `/dsh-idle-crt/` 下）：`state.json`、`settings.json`（GET/POST）、`client.js`、`bootstrap.js`；
 调试用的 `auth-url.json` / `debug.json` / `diag` 仅回环可访问。
 
