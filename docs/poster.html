@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>dsh-idle-crt · 待机显像管</title>
+<style>
+  :root{
+    --bg:#000;
+    --ink:#f2f6ff;
+    --blue:#2f6bff;
+    --cyan:#7fe0ff;
+    --dim:#7d8aa6;
+    --faint:#4c5568;
+    --mono:"Cascadia Mono","JetBrains Mono","SFMono-Regular",Consolas,monospace;
+    --sans:"Microsoft YaHei","PingFang SC","Noto Sans SC",system-ui,sans-serif;
+    --display:"Impact","Haettenschweiler","Arial Black",var(--sans);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{width:1080px;height:1620px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);position:relative}
+
+  /* ---------- tube ---------- */
+  .tube{position:absolute;inset:0;background:radial-gradient(115% 82% at 50% 46%, #0a0d14 0%, #05070b 58%, #000 100%)}
+  .grid{position:absolute;inset:0;opacity:.14;background-image:
+      linear-gradient(to right, rgba(90,130,220,.30) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(90,130,220,.22) 1px, transparent 1px);
+      background-size:48px 48px}
+  .vig{position:absolute;inset:0;background:radial-gradient(105% 78% at 50% 44%, transparent 40%, rgba(0,0,0,.72) 100%)}
+  .bloom{position:absolute;left:50%;top:280px;width:900px;height:520px;transform:translateX(-50%);
+    background:radial-gradient(closest-side, rgba(47,107,255,.20), transparent 72%);filter:blur(10px)}
+
+  /* bezel + screen */
+  .bezel{position:absolute;inset:30px;border-radius:26px;padding:22px;
+    background:linear-gradient(160deg,#15171c,#0a0b0e 46%,#101216);
+    box-shadow:0 0 0 1px rgba(150,180,255,.10), 0 40px 90px -30px #000, inset 0 0 0 1px rgba(255,255,255,.03)}
+  .screen{position:relative;height:100%;border-radius:14px;overflow:hidden;background:#000;
+    box-shadow:inset 0 0 90px rgba(0,0,0,.9), inset 0 0 0 1px rgba(140,170,255,.14)}
+  .screen:after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 48%, transparent 52%, rgba(0,0,0,.55) 100%)}
+  .lines{position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.30;mix-blend-mode:multiply;
+    background-image:repeating-linear-gradient(180deg, rgba(0,0,0,.85) 0 1px, transparent 1px 4px)}
+
+  /* content */
+  .pad{position:absolute;inset:0;padding:52px 56px 44px;display:flex;flex-direction:column;z-index:4}
+
+  .row{display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:13px;letter-spacing:.05em}
+  .prompt{color:rgba(150,190,255,.72)}
+  .prompt b{color:var(--cyan);font-weight:500}
+  .caret{display:inline-block;width:9px;height:15px;background:var(--cyan);opacity:.8;vertical-align:-2px;margin-left:2px}
+  .stamp{color:var(--faint);text-align:right;line-height:1.85;letter-spacing:.14em}
+  .stamp em{font-style:normal;color:var(--dim)}
+
+  .hero{margin-top:34px}
+  .hero .ide{font-family:var(--mono);font-size:15px;letter-spacing:.62em;color:rgba(127,224,255,.8);margin-bottom:12px}
+  .hero h1{font-family:var(--display);font-weight:900;font-size:150px;line-height:.94;letter-spacing:.01em;
+    -webkit-text-stroke:.6px rgba(255,255,255,.05);
+    background:linear-gradient(180deg,#ffffff 26%,#dfe8ff 52%,#8fa6d8 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 60px rgba(47,107,255,.30), -3px 0 rgba(255,80,80,.22), 3px 0 rgba(80,210,255,.24)}
+  .hero .sub{margin-top:16px;font-size:22px;line-height:1.75;color:#c3cee4;max-width:830px}
+  .hero .sub b{color:#fff;font-weight:700}
+
+  .still{margin-top:28px;position:relative;border:1px solid rgba(120,160,255,.26);background:#000}
+  .still img{display:block;width:100%;height:auto;filter:brightness(1.08) contrast(1.05) saturate(1.05)}
+  .still .tl,.still .br{position:absolute;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:rgba(190,215,255,.6)}
+  .still .tl{left:10px;top:8px}
+  .still .br{right:10px;bottom:8px}
+
+  .strip2{margin-top:24px;position:relative;border:1px solid rgba(120,160,255,.22);background:#000}
+  .strip2 img{display:block;width:100%;height:auto;filter:brightness(1.05) contrast(1.03)}
+  .strip2 .cap{position:absolute;left:12px;bottom:9px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:rgba(12,16,24,.78);background:rgba(240,246,255,.82);padding:3px 7px}
+  .specs{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;column-gap:34px}
+  .spec{display:flex;gap:10px;align-items:baseline;padding:11px 0;border-bottom:1px solid rgba(110,140,210,.16);font-size:14.5px;color:#aab6cd}
+  .spec i{font-family:var(--mono);font-style:normal;font-size:12px;color:var(--blue);flex:none}
+  .spec b{color:#e8eefb;font-weight:600;margin-right:2px}
+
+  .foot{margin-top:36px;padding-top:0}
+  .cmd{font-family:var(--mono);font-size:16px;line-height:1.4;color:#dbe6ff;
+    border-left:2px solid var(--blue);padding:10px 0 10px 14px;background:linear-gradient(90deg, rgba(47,107,255,.10), transparent 70%)}
+  .cmd .d{color:var(--cyan)}
+  .meta{margin-top:16px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
+    font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--faint);letter-spacing:.04em}
+  .meta b{color:#cfd9ee;font-weight:500}
+  .credit{font-family:var(--sans);font-size:12px;line-height:1.8;color:var(--faint);letter-spacing:0}
+  .credit b{color:var(--dim);font-weight:600}
+  .press{margin-top:auto;padding-top:18px;text-align:center;font-family:var(--mono);font-size:13px;letter-spacing:.42em;color:rgba(160,195,255,.55)}
+  .still{position:relative}
+  .inset{position:absolute;right:12px;bottom:12px;width:32%;border:1px solid rgba(120,160,255,.42);background:#000;box-shadow:0 14px 40px -10px #000, 0 0 24px -8px rgba(47,107,255,.55)}
+  .inset img{display:block;width:100%;height:auto}
+  .inset .cap{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:rgba(12,16,24,.82);background:rgba(240,246,255,.88);padding:2px 6px}
+  .params{margin-top:22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 26px;font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.03em;align-items:start}
+  .params .h{grid-column:1/-1;letter-spacing:.3em;color:var(--faint);margin-bottom:4px}
+  .params .p{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(110,140,210,.14);white-space:nowrap}
+  .params .p em{font-style:normal;color:var(--faint)}
+  .params .p span{color:#c9d5ea}  .still .br{background:rgba(6,8,12,.72);border:1px solid rgba(120,160,255,.28);padding:3px 7px;color:rgba(200,220,255,.72)}
+  .compat{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:20px;font-family:var(--mono);font-size:11.5px}
+  .compat .k{letter-spacing:.24em;color:var(--faint);margin-right:4px}
+  .compat .c{border:1px solid rgba(120,160,255,.22);color:#b7c4dc;padding:5px 9px;letter-spacing:.02em;background:rgba(20,28,44,.35)}</style>
+</head>
+<body>
+<div class="tube"></div><div class="grid"></div><div class="bloom"></div><div class="vig"></div>
+
+<div class="bezel"><div class="screen">
+  <div class="lines"></div>
+  <div class="pad">
+    <div class="row">
+      <div class="prompt">&gt; <b>dsh</b> plugin --profile desktop add dsh-idle-crt<span class="caret"></span></div>
+      <div class="stamp"><em>v0.2.7</em><br>MIT · GPU<td></div>
+    </div>
+
+    <div class="hero">
+      <div class="ide">IDLE&nbsp;&nbsp;CRT</div>
+      <h1>待机显像管</h1>
+      <p class="sub">机器不干活的时候，让它亮着。<b>十分钟</b>没有任务、也没有人碰鼠标键盘，
+        一块 CRT 板子从黑里浮起来；点一下、或者按一个键，它就收回去。</p>
+    </div>
+
+    <div class="still">
+      <img src="poster-sweep-full.png" alt="反色扫掠中的待机画面">
+      <div class="tl">1600×900 · 60 FPS</div>
+      <div class="br">INVERSION&nbsp;SWEEP · 14 s / PASS</div>
+
+    </div>
+
+     <div class="params">
+      <div class="h">DEFAULTS</div>
+      <div class="p"><em>无操作阈值</em><span>10 min</span></div>
+      <div class="p"><em>点亮预热</em><span>1.4 s</span></div>
+      <div class="p"><em>淡入 / 淡出</em><span>320 / 600 ms</span></div>
+      <div class="p"><em>反扫开始</em><span>4 s</span></div>
+      <div class="p"><em>一程 / 停留</em><span>14 s / 5 s</span></div>
+      <div class="p"><em>扫描线强度</em><span>1.0 ×</span></div>
+    </div>
+
+    <div class="compat"><span class="k">COEXIST</span><span class="c">全屏</span><span class="c">模态框</span><span class="c">播放中的视频</span><span class="c">更高的 z 轴 HUD</span><span class="c">其他动画插件</span></div>
+
+    <div class="specs">
+      <div class="spec"><i>01</i><span><b>有活干就不出现</b>　宿主实时跟踪会话忙碌</span></div>
+      <div class="spec"><i>02</i><span><b>只认窗口内的输入</b>　移动不算，点击/按键才收</span></div>
+      <div class="spec"><i>03</i><span><b>全 GPU 合成</b>　16.6 ms / 帧，逐帧零 CPU</span></div>
+      <div class="spec"><i>04</i><span><b>与所有插件共存</b>　z 轴爬升，全屏/弹窗让路</span></div>
+      <div class="spec"><i>05</i><span><b>设置里开一页</b>　阈值/预热/扫掠/提示语</span></div>
+      <div class="spec"><i>06</i><span><b>派生自开源闪屏</b>　dsh-splash-crt，MIT</span></div>
+    </div>
+
+    <div class="foot">
+      <div class="cmd"><span class="d">$</span> dsh plugin --profile desktop add dsh-idle-crt</div>
+      <div class="meta">
+        <div class="credit"><b>画面来源</b> dsh-splash-crt（justawebsite，MIT）<br>改成待机屏保：忙碌检测 · 输入语义 · 设置页 · GPU 合成</div>
+        <div style="text-align:right"><b>github.com/yuanzephyr920-oss/dsh-idle-crt</b><br>npm i dsh-idle-crt</div>
+      </div>
+      <div class="press">PRESS ANY KEY TO CONTINUE</div>
+    </div>
+  </div>
+</div></div>
+</body>
+</html>

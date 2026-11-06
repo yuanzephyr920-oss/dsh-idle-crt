@@ -179,6 +179,7 @@ node tools/preview-server.mjs 8791        # 另开一个窗口
 node tools/record-gif.mjs http://127.0.0.1:8791   # 475 帧 → _frames/
 python tools/gif-encode.py 560 64 none 1        # → docs/plate-cycle.gif（8.6 MB，475 帧）
 node tools/comment-frames.mjs                 # 取评论配图用的两帧（待机 / 扫掠中）
+node tools/poster-shot.mjs                    # 重渲染 docs/poster.png（宣传海报，2160×3240）
 python tools/comment-image.py _shots/comment-idle.png _shots/comment-sweep.png
 ```
 
