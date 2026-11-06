@@ -28,7 +28,7 @@ const PLATE_ATTR = 'data-dsh-idle-crt-root'
 const win = window
 const doc = document
 /** Bumped in lib/index.js / package.json together; surfaced on the debug channel. */
-const VERSION = '0.2.6'
+const VERSION = '0.2.7'
 
 const DEFAULTS = {
   enabled: true,
@@ -1520,7 +1520,7 @@ function paintWords(ctx, W, H) {
   ctx.shadowColor = 'rgba(90,150,255,0.9)'
   ctx.shadowBlur = size * 0.10
   ctx.globalAlpha = 0.75
-  ctx.fillText('> dsh web --idle-crt --profile desktop', -size * 2.52, -size * 0.86)
+  ctx.fillText('> dsh plugin --profile desktop add dsh-idle-crt', -size * 2.52, -size * 0.86)
   ctx.globalAlpha = 1
   ctx.shadowBlur = 0
 
@@ -1582,7 +1582,7 @@ function drawScreen1(ctx, W, H, state, opts) {
   ctx.shadowColor = 'rgba(90,150,255,0.9)'
   ctx.shadowBlur = size * 0.10
   ctx.globalAlpha = clamp(level * 0.75, 0, 1)
-  ctx.fillText('> dsh web --idle-crt --profile desktop', -size * 2.52, -size * 0.86)
+  ctx.fillText('> dsh plugin --profile desktop add dsh-idle-crt', -size * 2.52, -size * 0.86)
   ctx.globalAlpha = clamp(level, 0, 1)
   ctx.shadowBlur = 0
 
