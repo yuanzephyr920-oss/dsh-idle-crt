@@ -1,0 +1,66 @@
+{
+  "name": "dsh-idle-crt",
+  "version": "0.2.0",
+  "description": "DSH 待机显像管：无活干且十分钟没有鼠标键盘操作时，页面盖上一块 CRT 板（辉光字 + 循环反色扫掠），点一下或按个键就消失。派生自 dsh-splash-crt。",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "cordis",
+    "idle",
+    "screensaver",
+    "crt",
+    "retro",
+    "webgl",
+    "shader"
+  ],
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./bootstrap": "./lib/bootstrap.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "tools",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "assemble": "python tools/assemble-client.py",
+    "preview": "node tools/preview-server.mjs 8791"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "license": "MIT",
+  "author": "dsh-idle-crt contributors",
+  "homepage": "https://github.com/yuanzephyr920-oss/dsh-idle-crt#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuanzephyr920-oss/dsh-idle-crt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yuanzephyr920-oss/dsh-idle-crt/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  }
+}

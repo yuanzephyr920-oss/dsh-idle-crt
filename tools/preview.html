@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>dsh-idle-crt · 待机画面预览</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #07090d;
+    --line: rgba(120, 170, 255, 0.22);
+    --ink: #cfe0ff;
+    --dim: #7b8ba8;
+    --accent: #2f6bff;
+  }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  body { font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace; color: var(--ink); }
+
+  /* ------------------------------------------------------- fake DSH window */
+  #app { position: fixed; inset: 0; display: grid; grid-template-columns: 250px 1fr;
+         grid-template-rows: 44px 1fr; background: var(--bg); }
+  #topbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px;
+            padding: 0 16px; border-bottom: 1px solid var(--line); background: #090d13;
+            font-size: 12.5px; color: var(--dim); }
+  #topbar b { color: var(--ink); font-weight: 600; letter-spacing: .06em; }
+  #topbar .dot { width: 7px; height: 7px; border-radius: 50%; background: #2ecc71;
+                 box-shadow: 0 0 8px #2ecc71; }
+  #side { border-right: 1px solid var(--line); padding: 12px 10px; font-size: 12px;
+          color: var(--dim); overflow: hidden; }
+  #side .row { padding: 7px 8px; border-radius: 6px; white-space: nowrap;
+               overflow: hidden; text-overflow: ellipsis; }
+  #side .row.on { background: rgba(47, 107, 255, 0.16); color: var(--ink); }
+  #main { padding: 22px 26px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  #main .bubble { max-width: 780px; padding: 10px 13px; border-radius: 9px; font-size: 13px;
+                  line-height: 1.65; background: #101826; border: 1px solid rgba(120,170,255,.12); }
+  #main .bubble.me { margin-left: auto; background: rgba(47, 107, 255, 0.13);
+                     border-color: rgba(47, 107, 255, 0.35); }
+  #main code { color: #8fd0ff; }
+  #composer { margin-top: auto; border: 1px solid var(--line); border-radius: 10px;
+              padding: 12px 14px; color: var(--dim); font-size: 12.5px; background: #0a0f16; }
+  #composer .caret { display: inline-block; width: 7px; height: 14px; margin-left: 3px;
+                     vertical-align: -2px; background: #6ea0ff; animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  #clock { margin-left: auto; color: var(--dim); }
+
+  /* ---------------------------------------------------------- control bar */
+  #bar {
+    position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+    z-index: 2147483600; display: flex; flex-wrap: wrap; gap: 8px 10px;
+    align-items: center; padding: 10px 14px; max-width: min(1280px, 96vw);
+    box-sizing: border-box; background: rgba(6, 10, 16, 0.92);
+    border: 1px solid rgba(120, 170, 255, 0.35); border-radius: 10px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 8px 34px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 0, 0, 0.5) inset;
+    color: #cfe0ff; font-size: 12px; line-height: 1.1; user-select: none;
+  }
+  #bar .grp { display: flex; align-items: center; gap: 6px; }
+  #bar .sep { width: 1px; height: 20px; background: rgba(120, 170, 255, 0.28); }
+  #bar button {
+    font: inherit; color: #dbe9ff; cursor: pointer; background: rgba(40, 70, 130, 0.35);
+    border: 1px solid rgba(120, 170, 255, 0.4); border-radius: 6px; padding: 5px 9px;
+  }
+  #bar button:hover { background: rgba(70, 120, 210, 0.45); }
+  #bar button[data-active="1"] { background: var(--accent); border-color: #6ea0ff; color: #fff; }
+  #bar button:disabled { opacity: .4; cursor: default; }
+  #bar label { display: flex; align-items: center; gap: 6px; white-space: nowrap; color: #a9bcdd; }
+  #bar input[type=range] { width: 160px; accent-color: #3d7dff; }
+  #bar input[type=number] { width: 62px; font: inherit; color: #dbe9ff; background: rgba(0,0,0,.5);
+    border: 1px solid rgba(120,170,255,.35); border-radius: 5px; padding: 3px 5px; }
+  #readout { color: #7dffb0; min-width: 300px; }
+  #readout b { color: #fff; font-weight: 600; }
+  #hint { position: fixed; left: 50%; top: 56px; transform: translateX(-50%);
+          z-index: 2147483600; color: rgba(200, 220, 255, 0.5); font-size: 11.5px;
+          letter-spacing: .05em; pointer-events: none; }
+  #mirrorWrap { position: fixed; inset: 0; z-index: 2147483550; background: #000;
+                overflow: auto; display: none; }
+  #mirrorWrap img { display: block; width: 100%; height: auto; }
+  body[data-bare="1"] #bar, body[data-bare="1"] #hint { display: none; }
+</style>
+</head>
+<body>
+<!-- A fake DSH window, so the preview shows what the plate actually covers. -->
+<div id="app">
+  <div id="topbar">
+    <span class="dot"></span><b>DEEPSEEK HARNESS</b>
+    <span>workspace G:\DSH</span>
+    <span id="clock">--:--:--</span>
+  </div>
+  <div id="side">
+    <div class="row on">待机画面 · idle-crt</div>
+    <div class="row">fishtalk 语气档案</div>
+    <div class="row">QQ 机器人 · 黍</div>
+    <div class="row">dsh-fish-preset</div>
+    <div class="row">report · 装配文档</div>
+  </div>
+  <div id="main">
+    <div class="bubble me">把待机画面做成 dsh 插件：十分钟没动、也没活干的时候显示 CRT 动画，一动就消失。</div>
+    <div class="bubble">宿主半区盯着 <code>agent/status</code>，页面半区只做两件事：<br>
+      ① 记下最后一次鼠标键盘动作；② 每 1.5 秒问一次宿主还有没有活干。<br>
+      两样都满足才挂上显像管，任何动作立即淡出。</div>
+    <div class="composer">给 DSH 发消息…<span class="caret"></span></div>
+  </div>
+</div>
+
+<div id="hint">dsh-idle-crt 预览 · 与真机同一份 lib/plate.js</div>
+
+<div id="bar">
+  <div class="grp">
+    <button id="run" data-active="1">▶ 闲置模拟</button>
+    <button id="force">强制出现</button>
+    <button id="close">关闭</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grp">
+    <label><input id="busy" type="checkbox"> 有活干 (busy)</label>
+    <label>空闲阈值 <input id="idle" type="number" min="0" max="3600" step="1" value="10">s</label>
+  </div>
+  <div class="sep"></div>
+  <div class="grp">
+    <button id="s-boot">预热</button>
+    <button id="s-idle">待机</button>
+    <button id="s-white">反色中</button>
+    <button id="s-full">全白</button>
+    <button id="s-black">反黑中</button>
+    <button id="s-blackhold">全黑停留</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grp">
+    <label>时刻 <input id="time" type="range" min="0" max="90" step="0.05" value="0"><span id="timeval">0.00s</span></label>
+  </div>
+  <div class="sep"></div>
+  <div class="grp">
+    <label>预热 <input id="boot" type="number" min="400" max="6000" step="100" value="1400">ms</label>
+    <label>一程 <input id="span" type="number" min="800" max="30000" step="500" value="14000">ms</label>
+    <label>停留 <input id="hold" type="number" min="0" max="20000" step="500" value="5000">ms</label>
+  </div>
+  <div class="sep"></div>
+  <div class="grp"><button id="probe">像素自检</button><button id="mirror">⬒ 镜像</button></div>
+  <div id="readout">mode <b id="r-mode">-</b> · idle <b id="r-idle">0.0</b>s / <b id="r-th">10</b>s · busy <b id="r-busy">false</b> · <b id="r-extra">-</b></div>
+</div>
+
+<div id="mirrorWrap"><img id="mirrorImg" alt="idle plate canvas"></div>
+
+<script>
+// Preview config for the browser half (a static page has no host routes).
+window.__DSH_IDLE_CRT_PREVIEW__ = {
+  enabled: true,
+  idleMs: 10000,
+  pollMs: 1500,
+  fadeInMs: 320,
+  fadeOutMs: 600,
+  bootMs: 1400,
+  wipeStartMs: 4000,
+  wipeMs: 14000,
+  wipeHoldMs: 5000,
+  scanlineIntensity: 1,
+}
+</script>
+<script src="../lib/plate.js"></script>
+<script>
+(function () {
+  'use strict'
+  const params = new URLSearchParams(location.search)
+  if (params.get('bare') === '1') document.body.dataset.bare = '1'
+
+  const $ = (id) => document.getElementById(id)
+  const CRT = window.__DSH_IDLE_CRT__
+  if (!CRT || !CRT.createIdleController) {
+    $('readout').textContent = 'client half failed to load (lib/plate.js)'
+    return
+  }
+
+  const cfg = Object.assign({}, CRT.settings, window.__DSH_IDLE_CRT_PREVIEW__ || {})
+  const idleSec = Number(params.get('idle'))
+  if (Number.isFinite(idleSec) && idleSec >= 0) cfg.idleMs = idleSec * 1000
+  const paramsFreeze = params.get('freeze')
+  if (paramsFreeze) cfg.idleMs = 0
+
+  const controller = CRT.createIdleController({ settings: cfg, preview: true })
+
+  // A click on the control bar IS a real click: let the controller see it, then
+  // restart the countdown so the bar stays usable.
+  const bar = $('bar')
+  for (const type of ['pointerdown', 'mousedown', 'click', 'keydown', 'touchstart', 'input']) {
+    bar.addEventListener(type, () => controller.setIdle(true), true)
+  }
+
+  const plate = () => controller.raw.overlay || null
+  const dbg = () => { const h = plate(); return h ? h.debug : null }
+  let mirrorOn = false
+
+  function freeze(phase, seconds) {
+    if (!plate()) controller.show('preview-freeze')
+    const d = dbg()
+    if (!d) return
+    d.freezeAt(phase, seconds)
+    $('time').value = String(Math.min(90, seconds))
+    $('timeval').textContent = Number(seconds).toFixed(2) + 's'
+  }
+
+  function refresh() {
+    const s = controller.snapshot()
+    $('r-mode').textContent = s.mode
+    $('r-idle').textContent = (s.idleFor / 1000).toFixed(1)
+    $('r-th').textContent = Math.round(s.idleMs / 1000)
+    $('r-busy').textContent = String(s.effectiveBusy)
+    $('run').dataset.active = controller.raw.started ? '1' : '0'
+    $('force').disabled = plate() !== null
+    $('close').disabled = plate() === null
+    const info = s.overlay
+    if (info) {
+      const wipe = info.wipe
+      $('r-extra').textContent = 'plate ' + info.phase + ' t=' + info.phaseT.toFixed(2) + 's wipe=' +
+        (wipe && wipe.active ? (wipe.holding ? 'hold' : wipe.u.toFixed(2)) : 'off')
+      if (document.activeElement !== $('time')) {
+        $('time').value = String(Math.min(90, info.phaseT))
+        $('timeval').textContent = info.phaseT.toFixed(2) + 's'
+      }
+    } else {
+      $('r-extra').textContent = s.lastError ? 'error: ' + s.lastError : 'no plate'
+    }
+  }
+
+  $('run').addEventListener('click', () => {
+    if (controller.raw.started) controller.stop()
+    else controller.start()
+    controller.setIdle(true)
+  })
+  $('force').addEventListener('click', () => {
+    controller.show('preview-force')
+    if (paramsFreeze) {
+      const parts = String(paramsFreeze).split(':')
+      freeze(parts[0], Number(parts[1]) || 0)
+    } else if (params.get('pause') === '1') {
+      const d = dbg()
+      if (d) d.pauseRaf()
+    }
+  })
+  $('close').addEventListener('click', () => controller.hide('preview-close'))
+  $('busy').addEventListener('change', (e) => controller.setBusy(e.target.checked))
+  $('idle').addEventListener('change', (e) => {
+    const sec = Math.max(0, Number(e.target.value) || 0)
+    controller.setIdleMs(sec * 1000)
+    controller.setIdle(true)
+  })
+
+  // ------------------------------------------------------------ animation knobs
+  const bootMs = () => Number($('boot').value) || 1400
+  const spanMs = () => Number($('span').value) || 14000
+  const holdMs = () => Number($('hold').value) || 5000
+
+  function applyKnobs() {
+    const patch = { bootMs: bootMs(), wipeMs: spanMs(), wipeHoldMs: holdMs() }
+    controller.settings.bootMs = patch.bootMs
+    controller.settings.wipeMs = patch.wipeMs
+    controller.settings.wipeHoldMs = patch.wipeHoldMs
+    controller.settings.wipeStartMs = patch.bootMs + 400
+    const d = dbg()
+    if (d) d.set(patch)
+  }
+  for (const id of ['boot', 'span', 'hold']) $(id).addEventListener('change', applyKnobs)
+  $('boot').value = String(cfg.bootMs || 1400)
+  $('span').value = String(cfg.wipeMs || 14000)
+  $('hold').value = String(cfg.wipeHoldMs == null ? 5000 : cfg.wipeHoldMs)
+  $('idle').value = String(Math.round(cfg.idleMs / 1000))
+
+  $('s-boot').addEventListener('click', () => freeze('screen1', bootMs() * 0.45 / 1000))
+  $('s-idle').addEventListener('click', () => freeze('screen1', (bootMs() + 900) / 1000))
+  $('s-white').addEventListener('click', () => freeze('screen1', (bootMs() + 400 + spanMs() * 0.5) / 1000))
+  $('s-full').addEventListener('click', () => freeze('screen1', (bootMs() + 400 + spanMs() + 200) / 1000))
+  $('s-black').addEventListener('click', () => freeze('screen1', (bootMs() + 400 + spanMs() + holdMs() + spanMs() * 0.5) / 1000))
+  $('s-blackhold').addEventListener('click', () => freeze('screen1', (bootMs() + 400 + (spanMs() + holdMs()) * 2 - 1500) / 1000))
+
+  $('time').addEventListener('input', (e) => {
+    const t = Number(e.target.value) || 0
+    $('timeval').textContent = t.toFixed(2) + 's'
+    freeze('screen1', t)
+  })
+
+  // ------------------------------------------------------------------- extras
+  $('probe').addEventListener('click', () => {
+    const d = dbg()
+    if (!d) { $('r-extra').textContent = 'show the plate first'; return }
+    const probe = d.pixelProbe()
+    window.__DSH_IDLE_CRT_PROBE__ = probe
+    const px = probe.pixels || {}
+    $('r-extra').textContent = 'probe lit=' + probe.platformLitShare + '% white=' + px.white +
+      '% black=' + px.black + '% mid=' + px.mid + '%'
+  })
+  $('mirror').addEventListener('click', () => {
+    mirrorOn = !mirrorOn
+    $('mirror').dataset.active = mirrorOn ? '1' : '0'
+    $('mirrorWrap').style.display = mirrorOn ? 'block' : 'none'
+  })
+
+  const clock = $('clock')
+  setInterval(() => { clock.textContent = new Date().toTimeString().slice(0, 8) }, 1000)
+
+  controller.start()
+  setInterval(refresh, 200)
+  setInterval(() => {
+    if (!mirrorOn) return
+    const d = dbg()
+    if (!d) return
+    const probe = d.pixelProbe()
+    $('mirrorImg').src = probe.dataUrl
+    window.__DSH_IDLE_CRT_MIRROR__ = probe.dataUrl
+  }, 600)
+  refresh()
+
+  // Handy from the console / from Playwright.
+  window.__DSH_IDLE_CRT__.controller = controller
+  window.__DSH_IDLE_CRT__.mountPlate = (c, o) => controller.show('manual') && plate()
+})()
+</script>
+</body>
+</html>

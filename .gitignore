@@ -1,0 +1,10 @@
+node_modules/
+_harness/
+_shots/
+_work/
+tools/_diag/
+preview-settings.json
+_preview-settings.json
+*.log
+.DS_Store
+Thumbs.db
