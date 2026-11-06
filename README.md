@@ -46,7 +46,7 @@ DSH 闲着、并且超过设定时间没人碰鼠标键盘时，页面盖上一�
 
 ![待机画面：一轮完整的反色扫掠](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/plate-cycle.gif)
 
-一轮完整循环 38 秒（预热 → 白色反色扫掠 → 停留 → 黑色反向扫掠 → 停留），这里 12.5 fps、560×315 抽样；真实画布是 60 fps 的全屏 GPU 合成。
+一轮完整循环 38 秒（预热 → 白色反色扫掠 → 停留 → 黑色反向扫掠 → 停留），这里 8.33 fps、480×270 抽样（4.2 MB）；真实画布是 60 fps 的全屏 GPU 合成。
 
 | 预热瞬间 | 设置 → 待机屏保 |
 |---|---|
@@ -177,7 +177,7 @@ tools/              构建、预览、验收、性能探针
 ```powershell
 node tools/preview-server.mjs 8791        # 另开一个窗口
 node tools/record-gif.mjs http://127.0.0.1:8791   # 475 帧 → _frames/
-python tools/gif-encode.py 560 64 none 1  # → docs/plate-cycle.gif（约 8.8 MB）
+python tools/gif-encode.py 480 64 none 1 3 8.33  # → docs/plate-cycle.gif（4.18 MiB，317 帧）
 ```
 
 `python` 需要 Pillow；没有的话用 DSH 自带的 python（`dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe`）。
