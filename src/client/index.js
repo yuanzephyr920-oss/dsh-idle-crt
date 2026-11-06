@@ -28,7 +28,7 @@ const PLATE_ATTR = 'data-dsh-idle-crt-root'
 const win = window
 const doc = document
 /** Bumped in lib/index.js / package.json together; surfaced on the debug channel. */
-const VERSION = '0.2.5'
+const VERSION = '0.2.6'
 
 const DEFAULTS = {
   enabled: true,
