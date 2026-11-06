@@ -9,3 +9,4 @@ _preview-settings.json
 .DS_Store
 Thumbs.db
 _frames/
+tools/_ver.mjs
