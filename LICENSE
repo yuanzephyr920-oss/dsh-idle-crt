@@ -2,7 +2,7 @@ MIT License
 
 Copyright (c) 2026 dsh-idle-crt contributors
 
-本项目的画面（CRT 成影管效果、反色扫掠、辉光字排版）派生自
+本项目的画面（CRT 显像管效果、反色扫掠、辉光字排版）派生自
 dsh-splash-crt（https://github.com/justawebsite/dsh-splash-crt，MIT 协议，
 Copyright (c) 2026 justawebsite 及其贡献者），并在此基础上做了待机触发、
 输入语义、共存与 GPU 合成等改造。上游代码与素材的授权条款保持原样。
