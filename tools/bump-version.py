@@ -1,8 +1,8 @@
-import io
+﻿import io
 import json
 import re
 
-VERSION = '0.2.2'
+VERSION = '0.2.3'
 
 # package.json
 pkg = json.loads(io.open('package.json', encoding='utf-8').read().lstrip('\ufeff'))
@@ -17,3 +17,4 @@ for path in ('lib/index.js', 'lib/client.js', 'src/client/index.js'):
     io.open(path, 'w', encoding='utf-8', newline='\n').write(new)
 
 print('bumped to', VERSION)
+
