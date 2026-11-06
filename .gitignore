@@ -8,3 +8,4 @@ _preview-settings.json
 *.log
 .DS_Store
 Thumbs.db
+_frames/

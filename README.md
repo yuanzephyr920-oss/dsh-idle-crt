@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/icon.svg" width="96" alt="dsh-idle-crt" />
+<img src="https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/icon.svg" width="96" alt="dsh-idle-crt" />
 
 # 🖥️ dsh-idle-crt
 
@@ -44,13 +44,13 @@ DSH 闲着、并且超过设定时间没人碰鼠标键盘时，页面盖上一�
 
 ## 一眼
 
-| 待机画面 | 预热瞬间 |
-|---|---|
-| ![待机画面](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/screenshot-plate.png) | ![预热](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/screenshot-warmup.png) |
+![待机画面：一轮完整的反色扫掠](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/plate-cycle.gif)
 
-| 设置 → 待机屏保 |
-|---|
-| ![设置页](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/screenshot-settings.png) |
+一轮完整循环 38 秒（预热 → 白色反色扫掠 → 停留 → 黑色反向扫掠 → 停留），这里 12.5 fps、560×315 抽样；真实画布是 60 fps 的全屏 GPU 合成。
+
+| 预热瞬间 | 设置 → 待机屏保 |
+|---|---|
+| ![预热](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/screenshot-warmup.png) | ![设置页](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/screenshot-settings.png) |
 
 ## 快速开始
 

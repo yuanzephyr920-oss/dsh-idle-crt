@@ -1,8 +1,10 @@
-﻿import io
+import io
 import json
 import re
+import sys
 
-VERSION = '0.2.3'
+VERSION = sys.argv[1] if len(sys.argv) > 1 else '0.2.3'
+assert re.fullmatch(r'\d+\.\d+\.\d+', VERSION), f'bad version {VERSION!r}'
 
 # package.json
 pkg = json.loads(io.open('package.json', encoding='utf-8').read().lstrip('\ufeff'))

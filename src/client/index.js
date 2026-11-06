@@ -28,7 +28,7 @@ const PLATE_ATTR = 'data-dsh-idle-crt-root'
 const win = window
 const doc = document
 /** Bumped in lib/index.js / package.json together; surfaced on the debug channel. */
-const VERSION = '0.2.3'
+const VERSION = '0.2.4'
 
 const DEFAULTS = {
   enabled: true,
@@ -573,7 +573,23 @@ function mountOverlay(cfgIn, options) {
       return this.info()
     },
     dismiss: (reason) => dismiss(reason || 'debug'),
+    /** Park the plate on an exact moment of its timeline (used by the GIF recorder). */
+    poseAt(ms) {
+      const at = Math.max(0, Number(ms) || 0)
+      frozen = true
+      if (raf) { try { win.cancelAnimationFrame(raf) } catch (e) {} raf = 0 }
+      state.phase = 'screen1'
+      state.t = at / 1000
+      state.phaseT = at / 1000
+      state.plateMs = at
+      rootEl.style.opacity = '1'
+      render()
+      return this.info()
+    },
   }
+
+  // Dev hook: the GIF recorder drives the plate frame by frame through this.
+  try { win.__DSH_IDLE_CRT_PLATE__ = debug } catch (e) {}
 
   // ------------------------------------------------------------------ startup
   resize()
