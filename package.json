@@ -1,6 +1,6 @@
 {
   "name": "dsh-idle-crt",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "DSH 待机显像管：无活干且十分钟没有鼠标键盘操作时，页面盖上一块 CRT 板（辉光字 + 循环反色扫掠），点一下或按个键就消失。派生自 dsh-splash-crt。",
   "keywords": [
     "dsh",

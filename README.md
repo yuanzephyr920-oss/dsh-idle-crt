@@ -48,6 +48,11 @@ DSH 闲着、并且超过设定时间没人碰鼠标键盘时，页面盖上一�
 
 一轮完整循环 38 秒（预热 → 白色反色扫掠 → 停留 → 黑色反向扫掠 → 停留），这里 12.5 fps、560×315 抽样（8.6 MB）；真实画布是 60 fps 的全屏 GPU 合成。
 
+网速一般的话看这两个小一点的版本（内容一样，尺寸与帧率不同）：
+
+- [5 MB 版](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/plate-cycle-5mb.gif) · 480×270 · 8.33 fps
+- [2 MB 版](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/plate-cycle-2mb.gif) · 320×180 · 8.33 fps
+
 | 预热瞬间 | 设置 → 待机屏保 |
 |---|---|
 | ![预热](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/screenshot-warmup.png) | ![设置页](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/screenshot-settings.png) |
@@ -177,7 +182,9 @@ tools/              构建、预览、验收、性能探针
 ```powershell
 node tools/preview-server.mjs 8791        # 另开一个窗口
 node tools/record-gif.mjs http://127.0.0.1:8791   # 475 帧 → _frames/
-python tools/gif-encode.py 560 64 none 1        # → docs/plate-cycle.gif（8.6 MB，475 帧）
+python tools/gif-encode.py 560 64 none 1           # → docs/plate-cycle.gif（8.6 MB，475 帧，12.5 fps）
+python tools/gif-encode.py 480 64 none 1 3 8.33    # → docs/plate-cycle-5mb.gif（4.2 MB，317 帧）
+python tools/gif-encode.py 320 48 none 1 3 8.33    # → docs/plate-cycle-2mb.gif（1.8 MB，317 帧）
 node tools/comment-frames.mjs                 # 取评论配图用的两帧（待机 / 扫掠中）
 node tools/poster-shot.mjs                    # 重渲染 docs/poster.png（宣传海报，2160×3240）
 python tools/comment-image.py _shots/comment-idle.png _shots/comment-sweep.png
