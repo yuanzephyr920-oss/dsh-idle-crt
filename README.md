@@ -178,6 +178,8 @@ tools/              构建、预览、验收、性能探针
 node tools/preview-server.mjs 8791        # 另开一个窗口
 node tools/record-gif.mjs http://127.0.0.1:8791   # 475 帧 → _frames/
 python tools/gif-encode.py 560 64 none 1        # → docs/plate-cycle.gif（8.6 MB，475 帧）
+node tools/comment-frames.mjs                 # 取评论配图用的两帧（待机 / 扫掠中）
+python tools/comment-image.py _shots/comment-idle.png _shots/comment-sweep.png
 ```
 
 `python` 需要 Pillow；没有的话用 DSH 自带的 python（`dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe`）。
