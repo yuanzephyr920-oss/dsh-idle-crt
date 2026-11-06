@@ -28,7 +28,7 @@ const PLATE_ATTR = 'data-dsh-idle-crt-root'
 const win = window
 const doc = document
 /** Bumped in lib/index.js / package.json together; surfaced on the debug channel. */
-const VERSION = '0.2.9'
+const VERSION = '0.3.0'
 
 const DEFAULTS = {
   enabled: true,
@@ -194,6 +194,8 @@ function overlaySettings(raw) {
     promptText: prompt || DEFAULTS.promptText,
     // false（默认）时鼠标移动只是「有人在」的信号，不负责收掉画面。
     dismissOnMove: cfg.dismissOnMove === true,
+    // 默认开：画面跟着鼠标轻轻偏一点（近大远小的视差感），动画进度不受影响。
+    followMouse: cfg.followMouse !== false,
   }
 }
 
@@ -364,7 +366,25 @@ function mountOverlay(cfgIn, options) {
     ? { x: opts.startPointer.x, y: opts.startPointer.y }
     : null
 
+  // Mouse-follow micro shift (followMouse): the plate drafts a little towards the
+  // pointer. Sampling is offset in uv space, so nothing is redrawn and the
+  // animation clock keeps running untouched - this must never reset idle timing.
+  const PARALLAX_AMP = 0.012
+  const parallax = { x: 0, y: 0, tx: 0, ty: 0 }
+  function trackPointer(e) {
+    if (!cfg.followMouse || !interactive) return
+    const w = Math.max(1, win.innerWidth || 1)
+    const h = Math.max(1, win.innerHeight || 1)
+    const nx = clamp(((Number(e.clientX) || 0) / w - 0.5) * 2, -1, 1)
+    const ny = clamp(((Number(e.clientY) || 0) / h - 0.5) * 2, -1, 1)
+    // A positive uv offset moves the *sampled* image, i.e. the picture slides the
+    // other way; negate so the plate leans towards the cursor.
+    parallax.tx = -nx * PARALLAX_AMP
+    parallax.ty = ny * PARALLAX_AMP
+  }
+
   function onMove(e) {
+    trackPointer(e)
     if (!cfg.dismissOnMove) return
     if (state.phase !== 'screen1') return
     const x = Number(e.clientX) || 0
@@ -531,6 +551,14 @@ function mountOverlay(cfgIn, options) {
         wipeStartMs: cfg.wipeStartMs,
         wipeMs: cfg.wipeMs,
         wipeHoldMs: cfg.wipeHoldMs,
+        // followMouse 当前偏移（uv 单位）与目标，便于验收脚本确认「画面真的在跟手」。
+        parallax: {
+          x: +parallax.x.toFixed(5),
+          y: +parallax.y.toFixed(5),
+          tx: +parallax.tx.toFixed(5),
+          ty: +parallax.ty.toFixed(5),
+          amp: cfg.followMouse ? PARALLAX_AMP : 0,
+        },
       }
     },
     pauseRaf() {
@@ -617,6 +645,10 @@ function mountOverlay(cfgIn, options) {
     // A HUD may mount after us; re-check the stack now and then (body children
     // only, so this stays cheap) and step back above it if needed.
     if (state.phase === 'screen1' && Math.round(state.t * 1000) % 500 < 20) restack()
+    // Ease the parallax towards the pointer, frame-rate independent.
+    const ease = Math.min(1, dt * 9)
+    parallax.x += (parallax.tx - parallax.x) * ease
+    parallax.y += (parallax.ty - parallax.y) * ease
     if (state.phase === 'exiting' && state.phaseT >= fadeOutSec) {
       teardown('fade')
       return
@@ -663,6 +695,9 @@ function mountOverlay(cfgIn, options) {
       wipeOn: wipe.edge,
       // Sub-pixel wobble of the lettering, in uv units (the shader applies the sine).
       wobble: [size * 0.012 / Math.max(1, W), size * 0.006 / Math.max(1, H)],
+      // Pointer parallax, also in uv units: the whole frame slides, the layers and
+      // the wipe included, so nothing can drift out of sync.
+      parallax: [parallax.x, parallax.y],
     })
   }
 
@@ -686,6 +721,7 @@ const SETTING_KEYS = [
   'enabled', 'idleMs', 'pollMs', 'fadeInMs', 'fadeOutMs', 'bootMs',
   'wipeStartMs', 'wipeMs', 'wipeHoldMs', 'scanlineIntensity', 'promptText',
   'dismissOnMove',
+  'followMouse',
 ]
 
 /**
@@ -948,6 +984,7 @@ function createIdleController(options) {
   function coerceSetting(key, value, fallback) {
     if (key === 'enabled') return value === true || value === 'true'
     if (key === 'dismissOnMove') return value === true || value === 'true'
+    if (key === 'followMouse') return value === true || value === 'true'
     if (key === 'promptText') return String(value == null ? '' : value).slice(0, 80)
     const n = Number(value)
     return Number.isFinite(n) ? n : fallback
@@ -985,6 +1022,7 @@ function createIdleController(options) {
       blocked: environmentBlocksPlate(),
       zIndex: ctl.overlay ? ctl.overlay.rootEl.style.zIndex : null,
       dismissOnMove: ctl.settings.dismissOnMove === true,
+      followMouse: ctl.settings.followMouse !== false,
       forcedBusy: ctl.forcedBusy,
       idleMs: idleMs(),
       idleFor: Math.round(nowMs() - ctl.lastInput),
@@ -1238,6 +1276,7 @@ function createCrtPass(canvas, preserveDrawingBuffer) {
     uniform float uMs;        // ms since the tube lit
     uniform float uBootMs;    // warm-up length
     uniform vec2  uWobble;    // wobble amplitude in uv units
+    uniform vec2  uParallax;  // pointer parallax, in uv units
 
     vec2 warp(vec2 uv, float k) {
       if (k <= 0.0001) return uv;
@@ -1254,7 +1293,11 @@ function createCrtPass(canvas, preserveDrawingBuffer) {
     }
 
     void main() {
-      vec2 uv = warp(vUv, uWarp);
+      // The pointer shifts the whole frame; everything below (barrel warp, layers,
+      // vignette, inversion boundary) reads from this offset coordinate, so the
+      // picture moves as one piece instead of each effect drifting separately.
+      vec2 pv = vUv + uParallax;
+      vec2 uv = warp(pv, uWarp);
       float inside = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
 
       // ---- warm-up / breathing (the same curve the 2D layer used to apply) ----
@@ -1296,7 +1339,7 @@ function createCrtPass(canvas, preserveDrawingBuffer) {
       col *= 1.0 - uScan * lines;
       col += (1.0 - band) * 0.04;
       col += (hash(uv * uRes + uTime) - 0.5) * 0.035;
-      vec2 vc = vUv * 2.0 - 1.0;
+      vec2 vc = pv * 2.0 - 1.0;
       float r2 = dot(vc * vec2(uAspect, 1.0), vc * vec2(uAspect, 1.0));
       col *= 1.0 - uVignette * pow(clamp(r2 * 0.32, 0.0, 1.0), 1.6);
       col *= uLevels;
@@ -1306,7 +1349,7 @@ function createCrtPass(canvas, preserveDrawingBuffer) {
       col *= inside;
 
       // Inversion wipe: everything behind the travelling boundary flips polarity.
-      vec2 iso = vUv * 2.0 - 1.0;
+      vec2 iso = pv * 2.0 - 1.0;
       iso.x *= uAspect;
       float behind = step(iso.x + iso.y, uWipe);
       float m = mix(behind, 1.0 - behind, uWipeFlip);
@@ -1367,7 +1410,7 @@ function createCrtPass(canvas, preserveDrawingBuffer) {
 
   const u = {}
   for (const name of ['uWords', 'uPrompt', 'uWarp', 'uAspect', 'uRes', 'uVignette', 'uScan',
-    'uTime', 'uLevels', 'uWipe', 'uWipeFlip', 'uWipeOn', 'uMs', 'uBootMs', 'uWobble']) {
+    'uTime', 'uLevels', 'uWipe', 'uWipeFlip', 'uWipeOn', 'uMs', 'uBootMs', 'uWobble', 'uParallax']) {
     u[name] = gl.getUniformLocation(prog, name)
   }
 
@@ -1417,6 +1460,8 @@ function createCrtPass(canvas, preserveDrawingBuffer) {
       gl.uniform1f(u.uMs, p.ms)
       gl.uniform1f(u.uBootMs, p.bootMs)
       gl.uniform2f(u.uWobble, p.wobble[0], p.wobble[1])
+      const par = p.parallax || [0, 0]
+      gl.uniform2f(u.uParallax, par[0] || 0, par[1] || 0)
       gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     },

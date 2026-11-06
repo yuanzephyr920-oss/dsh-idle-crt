@@ -85,7 +85,7 @@ dsh plugin --profile desktop add link:G:/DSH/dsh-idle-crt
 **消失**
 
 - **在窗口里点一下**、**按一个键**、触摸一下、右键一下 —— 立刻淡出；
-- 鼠标只是**移动**不算（默认如此）。这是刻意的：「动一下鼠标就收起」的老式屏保，在被远程桌面、被猫碰到的桌子上是灾难；配置里可改回老行为（`dismissOnMove`）；
+- 鼠标只是**移动**不算（默认如此），但画面会跟着指针轻轻偏一点（`followMouse`，默认开）——像隔着一层玻璃看，动画照常走；这是刻意的：「动一下鼠标就收起」的老式屏保，在被远程桌面、被猫碰到的桌子上是灾难；配置里可改回老行为（`dismissOnMove`）；
 - 滚轮只锁住页面滚动，不收起画面——滚动一下往往只是「人在看」。
 
 **不会出现的情况**：页面里有全屏元素、有打开的模态框（`aria-modal`）、有**面积 ≥ 视口 20% 的正在播放的视频**；标签页在后台。别的插件也可以主动按住它（见下节）。
@@ -119,6 +119,7 @@ dsh plugin --profile desktop add link:G:/DSH/dsh-idle-crt
 | `scanlineIntensity` | number | `1` | 扫描线强度 0–2 |
 | `promptText` | string | `PRESS ANY KEY TO CONTINUE` | 底部提示语（留空用默认，最长 80 字符） |
 | `dismissOnMove` | bool | `false` | 鼠标移动也收起（老式屏保行为） |
+| `followMouse` | bool | `true` | 画面跟着鼠标轻微偏移（视差微动；不打断动画、不会因此收起） |
 
 ## 工作原理
 
@@ -217,7 +218,7 @@ python tools/comment-image.py _shots/comment-idle.png _shots/comment-sweep.png
 **本仓库相对上游的主要改动**
 
 1. 触发：从「启动时无条件显示」改为「宿主 busy=false 且页面内闲置超阈值」，并去掉启动时隐藏页面的行为；
-2. 输入：默认只有「窗口内点击 / 按键」才收板（上游是任意输入），滚轮改为只锁滚动，新增 `dismissOnMove` 开关；
+2. 输入：默认只有「窗口内点击 / 按键」才收板（上游是任意输入），滚轮改为只锁滚动，新增 `dismissOnMove` 开关；鼠标移动默认不收起，改为让整个画面跟着指针做 ±1.2% 的视差微动（`followMouse`，采样层位移，不重绘、不动动画时钟）；
 3. 宿主：新增 busy 检测（`agent/status` + `api-session/status` + `agents.list()` 兜底）、设置持久化与 `state.json`/`settings.json`；
 4. 新增一整页设置界面（`settings.section` 槽位），改完参数当场生效并落盘；
 5. 共存层：z-index 动态爬升、全屏/模态/视频让路（含 20% 视口门槛）、`hold/release`、`data-dsh-idle-crt="active"` 合作信号；

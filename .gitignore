@@ -10,3 +10,4 @@ _preview-settings.json
 Thumbs.db
 _frames/
 tools/_ver.mjs
+tools/_*.mjs
