@@ -19,6 +19,7 @@ DSH 闲着、并且超过设定时间没人碰鼠标键盘时，页面盖上一�
 </p>
 
 <p>
+  <a href="#为什么是它">为什么是它</a> ·
   <a href="#一眼">看一眼</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#什么时候出现什么时候消失">出现与消失</a> ·
@@ -26,7 +27,8 @@ DSH 闲着、并且超过设定时间没人碰鼠标键盘时，页面盖上一�
   <a href="#配置">配置</a> ·
   <a href="#工作原理">工作原理</a> ·
   <a href="#性能">性能</a> ·
-  <a href="#数据与信任">数据与信任</a> ·
+  <a href="#兼容性">兼容性</a> ·
+  <a href="#常见问题">常见问题</a> ·
   <a href="#来源与致谢">来源与致谢</a>
 </p>
 
@@ -42,6 +44,16 @@ DSH 闲着、并且超过设定时间没人碰鼠标键盘时，页面盖上一�
 > 画面部分（CRT 着色器、反色扫掠、辉光字排版）源自上游，MIT 协议，版权归其作者。
 > 详细改动与致谢见 [来源与致谢](#来源与致谢)。
 
+## 为什么是它
+
+**系统屏保管不了「这一页」**。Windows 的屏保是从整机层面等的，可 DSH 在跑长任务时你未必想让它盖掉进度；反过来，你去泡杯咖啡回来，系统屏保又不会告诉你「这十分钟 Agent 没在干活，可以放心走开」。
+
+**这个插件只做一个很窄的判断**：DSH 里没有正在跑的会话（宿主给出 `busy=false`），**并且**这个页面十分钟没人碰过鼠标键盘——两个条件都满足，才盖板。有活干时它一次都不会出现；你回来点一下，它立刻淡出，页面还是原来的页面。
+
+**不抢焦点、不劫持输入**：只在窗口内点击/按键/触摸/右键时才收板；滚轮只锁滚动；鼠标移动默认不收起，只让整个画面跟着指针做一点点视差微动（`followMouse`，可关）。没有全局快捷键，没有常驻在别的插件里的钩子。
+
+**零依赖、全 GPU**：运行时零依赖；文字只在上板时栅格化一次，之后每帧只有一个 `drawArrays`，RTX 4060 上 p50/p99 都是 16.7 ms（满 60 fps）。
+
 ## 一眼
 
 ![待机画面：一轮完整的反色扫掠](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/plate-cycle.gif)
@@ -52,6 +64,7 @@ DSH 闲着、并且超过设定时间没人碰鼠标键盘时，页面盖上一�
 
 - [4 MB 版](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/plate-cycle-5mb.gif) · 480×270 · 8.33 fps
 - [2 MB 版](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/plate-cycle-2mb.gif) · 320×180 · 8.33 fps
+- [竖版海报](https://raw.githubusercontent.com/yuanzephyr920-oss/dsh-idle-crt/main/docs/poster.png)（2160×3240，可当桌面/宣传图）
 
 | 预热瞬间 | 设置 → 待机屏保 |
 |---|---|
@@ -61,19 +74,27 @@ DSH 闲着、并且超过设定时间没人碰鼠标键盘时，页面盖上一�
 
 要求：DSH **0.2 及以上**，浏览器端支持 WebGL（这机器上基本都满足）。
 
-```powershell
-# 1) 从 npm 装（推荐）
-dsh plugin --profile desktop add dsh-idle-crt
+### 从 npm 装（推荐）
 
-# 2) 或者直接链一个本地目录（改代码时更方便）
+```powershell
+dsh plugin --profile desktop add dsh-idle-crt
+```
+
+### 或者链一个本地目录（改代码时更方便）
+
+```powershell
 dsh plugin --profile desktop add link:G:/DSH/dsh-idle-crt
 ```
 
 装完**重启一次 DeepSeek Harness**（客户端模块清单在启动时扫描），之后：
 
-- 想让画面现在出现：**设置 → 待机屏保 → 立刻看一眼**；
-- 想马上生效地调参数：设置页改完点「保存」，画面参数当场热更新；
-- 只想临时看效果、不装插件：`node tools/preview-server.mjs 8791`，打开 `http://127.0.0.1:8791/tools/preview.html`。
+### 装好之后 30 秒自检
+
+1. 打开 **设置 → 待机屏保**，能看到开关和参数，就说明设置页注册成功；
+2. 点 **立刻看一眼**：板子应该盖上来，按任意键或点一下消失；
+3. 想验证「无人时才出现」，把阈值临时改成 1 分钟，别碰页面等一分钟；看完记得在设置页点「恢复默认」。
+
+只想临时看效果、不装插件：`node tools/preview-server.mjs 8791`，打开 `http://127.0.0.1:8791/tools/preview.html`。
 
 ## 什么时候出现，什么时候消失
 
@@ -121,6 +142,8 @@ dsh plugin --profile desktop add link:G:/DSH/dsh-idle-crt
 | `dismissOnMove` | bool | `false` | 鼠标移动也收起（老式屏保行为） |
 | `followMouse` | bool | `true` | 画面跟着鼠标轻微偏移（视差微动；不打断动画、不会因此收起） |
 
+改完点「保存」：画面参数**当场热更新**，同时写进 `$DSH_HOME/idle-crt.settings.json`，下次开 DSH 仍然生效。
+
 ## 工作原理
 
 两个半边：
@@ -132,7 +155,8 @@ dsh plugin --profile desktop add link:G:/DSH/dsh-idle-crt
 
 1. 文字（DEEPSEEK / HARNESS / TUI 行 / 底部提示 / 辉光 / 扫描线洞）在**挂载时**画进两张离屏图层，上传成两张纹理——只在窗口尺寸或提示语变化时重做；
 2. 每帧只设几个 uniform、一次 `drawArrays`：预热斜坡、灯管闪烁、亚像素摆动、提示语渐显与呼吸、扫描线、滚动亮带、颗粒、暗角、RGB 色散、反色扫掠与青色边界、淡出，**全部在片元着色器里**；
-3. 没有任何逐帧的 2D 绘制或纹理上传。
+3. 指针视差也是采样坐标上的两个数（`uParallax`），整帧一起偏，不重绘、不动时间轴；
+4. 没有任何逐帧的 2D 绘制或纹理上传。
 
 ## 性能
 
@@ -146,6 +170,51 @@ dsh plugin --profile desktop add link:G:/DSH/dsh-idle-crt
 | **0.2.0 全 GPU 合成（RTX 4060 / ANGLE D3D11）** | **16.6 ms** | 16.7 | 16.8 |
 
 真机上 p99 与 p50 相同——满帧 60 fps。复测：`node tools/diag-perf-gpu.mjs 8791 gpu`（会打印实际 renderer 名字）。
+
+## 兼容性
+
+| 项 | 情况 |
+|---|---|
+| DSH | **≥ 0.2**；0.2.2-rc.1 桌面端实测 |
+| 运行时 | Electron 桌面端、浏览器 Web 都行（要有 WebGL） |
+| 渲染 | WebGL2 优先，自动回退 WebGL1；内部渲染宽度封顶 1600 px（保 60 fps） |
+| 同场实测 | dsh-theme-mls-desktop（主题壳/设置面板）、dsh-pet（小尺寸循环视频）、billion-context / 上下文洞察（大面积深色画布）、dsh-better-display（高 z-index HUD）、archive-manager |
+| 不适用 | CLI/TUI（没有页面）、无 WebGL 的环境 |
+
+## 已知限制
+
+- 只统计 **DSH 页面内**的输入。系统别处动鼠标不算——这是设计，不是 bug。
+- **不上锁、不遮系统屏**。它盖的是 DSH 这一页；要锁整机请用系统屏保/锁屏。
+- DSH 窗口在后台、或标签页不可见时**不会出现**（没有理由给一个看不见的页面做动画）。
+- 视差幅度固定 ±1.2% 视口，暂不可调。
+- 「正在播的视频」让路阈值是视口面积 20%：介于两者之间的中号视频会挡住屏保（有意的保守）。
+- 内部渲染宽度封顶 1600 px：4K 全屏会略软，换来的是满帧。
+
+## 常见问题
+
+**十分钟没动，为什么没出现？**
+按顺序查：① 是不是有任务在跑（宿主 `busy=true`）；② 标签页是不是在后台；③ 页面里有没有全屏、模态框、大视频；④ 是不是别的插件调了 `hold()` 或设了 `__DSH_IDLE_CRT_SUPPRESS__`；⑤ 设置页开关是不是被关了。`window.__DSH_IDLE_CRT__.snapshot()` 会直接告诉你 `mode / busy / blocked / idleFor`。
+
+**想立刻看效果，不想等十分钟？**
+设置页点「立刻看一眼」；或在控制台 `__DSH_IDLE_CRT__.show('demo')`（不会修改你的阈值）。
+
+**会不会拖慢 DSH？**
+不会：板子只在盖住时跑，逐帧只有一个 `drawArrays`；收起后不留 rAF、不留 DOM。真机 p99 16.8 ms。
+
+**和主题/宠物/截图插件打架吗？**
+不会互相覆盖：板子会爬到现有最高浮层之上，并在全屏、模态框、大视频出现时自动让路；别的插件也可以 `hold()` 让它等一等。见[和别的插件共存](#和别的插件共存)。
+
+**鼠标一动就消失，能改回来吗？**
+能。设置页打开「鼠标移动也能收掉」（`dismissOnMove`），回到老式屏保行为。
+
+**能只在某个工作区生效吗？**
+暂不支持（按窗口/页面生效）。需要的话可以提 issue。
+
+**怎么卸载？**
+`dsh plugin --profile desktop remove dsh-idle-crt`，再删掉 `$DSH_HOME/idle-crt.settings.json`（不删也无害）。
+
+**会不会发网络请求？**
+不会。插件没有任何外发请求，设置只写本地一个 json 文件；详见[数据与信任](#数据与信任)。
 
 ## 开发
 
@@ -199,6 +268,14 @@ python tools/comment-image.py _shots/comment-idle.png _shots/comment-sweep.png
 
 宿主路由（除调试路由外都在 `/dsh-idle-crt/` 下）：`state.json`、`settings.json`（GET/POST）、`client.js`、`bootstrap.js`；
 调试用的 `auth-url.json` / `debug.json` / `diag` 仅回环可访问。
+
+## 版本记录
+
+- **0.3.0** — 默认模式下的视差微动：鼠标移动不收起画面，但整帧跟着指针偏 ±1.2%（`followMouse`）。
+- **0.2.7** — 画面顶部那行改成真能执行的安装命令（原来只是装饰文案）。
+- **0.2.0** — 逐帧合成全部搬进片元着色器（两张预渲染纹理），4060 上 60 fps。
+- **0.1.5** — 文字层缓存 + 隔帧上传，软件渲染下从 90 ms 降到 41 ms。
+- **0.1.0** — 首个可用版本：busy 检测、输入语义、共存层、设置页与持久化。
 
 ## 数据与信任
 

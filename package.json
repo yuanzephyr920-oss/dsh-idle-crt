@@ -1,7 +1,7 @@
 {
   "name": "dsh-idle-crt",
-  "version": "0.3.0",
-  "description": "DSH 待机显像管：无活干且十分钟没有鼠标键盘操作时，页面盖上一块 CRT 板（辉光字 + 循环反色扫掠），点一下或按个键就消失。派生自 dsh-splash-crt。",
+  "version": "0.3.1",
+  "description": "DSH 待机显像管：没有会话在跑、且十分钟没碰鼠标键盘时，页面盖上一块 CRT 板（辉光字 + 循环反色扫掠 + 鼠标视差微动），点一下或按个键就消失；逐帧全 GPU 合成，60 fps，零运行时依赖。派生自 dsh-splash-crt。",
   "keywords": [
     "dsh",
     "dsh-plugin",
@@ -12,7 +12,10 @@
     "crt",
     "retro",
     "webgl",
-    "shader"
+    "shader",
+    "crt-shader",
+    "idle-screen",
+    "retro-terminal"
   ],
   "type": "module",
   "main": "lib/index.js",
